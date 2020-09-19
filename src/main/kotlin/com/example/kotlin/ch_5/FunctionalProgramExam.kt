@@ -7,7 +7,7 @@ data class Person(val name: String, val age: Int)
 fun main1() {
     val personList = listOf(Person("levi", 29), Person("sora", 31), Person("boram", 29))
     println(personList.maxBy({p: Person -> p.age}))
-    println(personList.maxBy() { p: Person -> p.age})
+    println(personList.maxBy { p: Person -> p.age})
     println(personList.maxBy { p -> p.age })
     println(personList.maxBy { it.age })
     println(personList.maxBy (Person::age))
@@ -97,6 +97,9 @@ fun main() {
                 println(it.name)
                 it
             }
-            .map { it.name }
+            .map { it.name } //최종연산 전까지는 지연연산되어 실제 계산되지 않는다.
             .toList()
+
+    //자바 함수형 인터페이스에 대해 람다로 함수형 인터페이스 무명 인스턴스를 만들 수 있다.
+    val executable = Runnable { println("executable") }
 }
