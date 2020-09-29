@@ -1,0 +1,9 @@
+opentracing:
+  jaeger:
+    log-spans: false
+    service-name: kotlin-exam
+    enable-b3-propagation: true
+  spring:
+    cloud:
+      log:
+        enabled: false
