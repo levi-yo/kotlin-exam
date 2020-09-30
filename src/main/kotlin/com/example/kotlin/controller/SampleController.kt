@@ -6,7 +6,8 @@ import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
-import java.lang.UnsupportedOperationException
+import org.springframework.web.server.ServerErrorException
+import kotlin.coroutines.CoroutineContext
 
 @RestController
 class SampleController(val service: SampleService, val tracer: Tracer) {
@@ -106,6 +107,52 @@ class SampleController(val service: SampleService, val tracer: Tracer) {
         } else {
             result.await()
         }
+    }
+
+    @GetMapping("/exception3")
+    suspend fun exceptionHandle3(): SampleEntity = try {
+        val result = CoroutineScope(Dispatchers.IO).async {
+            doSomething()
+        }
+        result.await()
+    } catch (e: UnsupportedOperationException) {
+        throw ServerErrorException("internal server error", e)
+    }
+
+    @GetMapping("/exception4")
+    suspend fun exceptionHandle4(): SampleEntity {
+        val result = CoroutineScope(Dispatchers.IO).async {
+            doSomething()
+        }
+
+        return result.await()
+    }
+
+    @GetMapping("/exception5")
+    suspend fun exceptionHandle5(): SampleEntity {
+        val exceptionHandler = CoroutineExceptionHandler {
+            _: CoroutineContext, throwable: Throwable ->
+                println("Job cancelled due to ${throwable.message}")
+        }
+
+        val result = CoroutineScope(Dispatchers.IO).async(exceptionHandler) {
+            doSomething()
+        }
+
+        return result.await()
+    }
+
+    @GetMapping("/exception6")
+    suspend fun exceptionHandle6(): SampleEntity {
+        CoroutineScope(Dispatchers.IO).async {
+            doSomething()
+        }.invokeOnCompletion { throwable ->
+            throwable?.let {
+                println("Job cancelled due to ${throwable.message}")
+            }
+        }
+
+        return SampleEntity(name = "default", age = 100)
     }
 
     private suspend fun doSomething(): SampleEntity {
