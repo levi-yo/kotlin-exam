@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import java.lang.UnsupportedOperationException
 
 @RestController
 class SampleController(val service: SampleService, val tracer: Tracer) {
@@ -73,6 +74,42 @@ class SampleController(val service: SampleService, val tracer: Tracer) {
         }
 
         return service.findEntity()
+    }
+
+    /**
+     * await()은 예외를 그대로 전파한다.
+     */
+    @GetMapping("/exception")
+    suspend fun exceptionHandle(): SampleEntity = try {
+        val result = CoroutineScope(Dispatchers.IO).async {
+            doSomething()
+        }
+        result.await()
+    } catch (e: UnsupportedOperationException) {
+        SampleEntity(name = "default", age = 100)
+    }
+
+    /**
+     * join()을 하면 예외를 전파하는 것이 아니고, 잡아서 처리한다.
+     */
+    @GetMapping("/exception2")
+    suspend fun exceptionHandle2(): SampleEntity {
+        val result = CoroutineScope(Dispatchers.IO).async {
+            doSomething()
+        }
+
+        //비동기 잡이 처리되기까지 대기한다.
+        result.join()
+
+        return if (result.isCancelled) {
+            SampleEntity(name = "default", age = 100)
+        } else {
+            result.await()
+        }
+    }
+
+    private suspend fun doSomething(): SampleEntity {
+        throw UnsupportedOperationException("unsupported operation exception")
     }
 }
 
